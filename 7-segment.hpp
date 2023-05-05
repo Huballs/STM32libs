@@ -42,6 +42,7 @@ public:
     explicit SevenSegment(digits_t *digits, segm_t *segments, int base = 10, bool align_right = true, bool leading_zeroes = false) 
         : digits_pins(digits), segment_pins(segments), _base(base), _align_right(align_right), _leading_zeroes(leading_zeroes){
             _out_dp.fill(0);
+            _out_digits.fill(0);
         };
     
     SevenSegment() = delete;
@@ -53,6 +54,9 @@ public:
         if(number != _old_number){
             UpdateNumber(number);
         }
+
+        if(!_old_number) // special case for zero
+            _out_digits_N = 1;
 
         if(_current_digit >= Ndigits){
             _current_digit = 0;
@@ -69,9 +73,34 @@ public:
         if(!_align_right && (_current_digit < _out_digits_N))
             SetSegments(_out_digits[_out_digits_N - _current_digit - 1]);
 
+        if(_out_dp[_current_digit])
+            _ON_SEG((*segment_pins)[7]);
+
         _ON_DIG((*digits_pins)[_current_digit]);
 
         ++_current_digit;
+    }
+
+    void DisplayNumber(float number){
+        
+        volatile const uint32_t max_int = pow(_base,Ndigits-1);
+        int dp = Ndigits-1;
+
+        if(!number){
+            goto setdp;
+        }
+
+        while (number < max_int && dp > 0){
+            number *= _base;
+            dp--;
+        }
+
+        setdp:
+        _out_dp.fill(0);
+        if(dp < Ndigits)
+            _out_dp[dp] = 1;
+
+        DisplayNumber(static_cast<int>(number));
     }
 
     void SetBase(int base){
@@ -97,9 +126,7 @@ public:
     }
 
     void ResetDP(){
-        for(int& dp : _out_dp){
-            dp = 0;
-        }
+        _out_dp.fill(0);
     }
 
     void TurnOff(){
@@ -113,6 +140,15 @@ public:
     }
 
 private:
+
+    uint32_t pow(uint32_t x, uint32_t y){
+        uint32_t res = x;
+        while(y > 1){
+            res *= x;
+            y--;
+        }
+        return res;
+    }
 
     void UpdateNumber(int number){
             /*  split digits into an array - _out_digits (inverted)
@@ -131,6 +167,11 @@ private:
         int d;
         _out_digits_N = 0;
         int i = 0;
+
+        if(!number){
+            _out_digits.front() = 0;
+            return;
+        }
 
         while(number){
             d = number % _base;
