@@ -39,8 +39,8 @@ public:
     // pins of segments A to DP
     segm_t *segment_pins;
 
-    explicit SevenSegment(digits_t *digits, segm_t *segments) 
-        : digits_pins(digits), segment_pins(segments){
+    explicit SevenSegment(digits_t *digits, segm_t *segments, int base = 10, bool align_right = true, bool leading_zeroes = false) 
+        : digits_pins(digits), segment_pins(segments), _base(base), _align_right(align_right), _leading_zeroes(leading_zeroes){
             _out_dp.fill(0);
         };
     
@@ -48,16 +48,10 @@ public:
 
     void DisplayNumber(int number){
         
-        if(number != _old_number){
-            /*  split digits into an array - _out_digits (inverted)
-                _out_digits[4]: 4 1 - -
-                    number:        14 */
-            split(number);
+        if(!_isOn) return;
 
-            if(_align_right)
-                /* restore order (- - 1 4) for easier indexing when right aligned */
-                std::reverse(_out_digits.begin(), _out_digits.end());
-            _old_number = number;
+        if(number != _old_number){
+            UpdateNumber(number);
         }
 
         if(_current_digit >= Ndigits){
@@ -80,6 +74,20 @@ public:
         ++_current_digit;
     }
 
+    void SetBase(int base){
+        _base = base;
+        UpdateNumber(_old_number);
+    }
+
+    void SetAlignedRight(bool align_right){
+        _align_right = align_right;
+        UpdateNumber(_old_number);
+    }
+
+    void SetLeadingZeroes(bool leading_zeroes){
+        _leading_zeroes = leading_zeroes;
+    }
+
     void SetDP(int digit){
         _out_dp[digit] = 1;
     }
@@ -88,9 +96,37 @@ public:
         _out_dp[digit] = 0;
     }
 
+    void ResetDP(){
+        for(int& dp : _out_dp){
+            dp = 0;
+        }
+    }
+
+    void TurnOff(){
+        _isOn = false;
+        ResetSegments();
+        ResetDigits();
+    }
+
+    void TurnOn(){
+        _isOn = true;
+    }
+
 private:
 
-    void split (int number){
+    void UpdateNumber(int number){
+            /*  split digits into an array - _out_digits (inverted)
+                _out_digits[4]: 4 1 - -
+                    number:        14 */
+            Split(number);
+
+            if(_align_right)
+                /* restore order (- - 1 4) for easier indexing when right aligned */
+                std::reverse(_out_digits.begin(), _out_digits.end());
+            _old_number = number;
+    }
+
+    void Split (int number){
     
         int d;
         _out_digits_N = 0;
@@ -162,9 +198,10 @@ private:
     }
 
 
-    const int _base = 10;
-    const bool _align_right = true;
-    const bool _leading_zeroes = true;
+    int _base;
+    bool _align_right;
+    bool _leading_zeroes;
+    bool _isOn = true;
     
     int _out_digits_N;
     std::array<int, Ndigits> _out_digits;
