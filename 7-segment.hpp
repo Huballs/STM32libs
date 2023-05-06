@@ -55,8 +55,13 @@ public:
             UpdateNumber(number);
         }
 
-        if(!_old_number) // special case for zero
+        if(!_old_number){ // special case for zero
             _out_digits_N = 1;
+        } 
+        if (_less_than_one){ // to display zero before decimal point
+            _out_digits_N = Ndigits;
+            _less_than_one = false;
+        }
 
         if(_current_digit >= Ndigits){
             _current_digit = 0;
@@ -87,12 +92,29 @@ public:
         int dp = Ndigits-1;
 
         if(!number){
+            dp = 0;
+            _less_than_one = true;
             goto setdp;
         }
 
-        while (number < max_int && dp > 0){
+        if(number < 1 && number > 0){
+            _less_than_one = true;
+        }
+
+        if(number < 0){
+            number = -number;
+            _is_negative = true;
+        } else {
+            _is_negative = false;
+        }
+
+        while (number < (_is_negative ? max_int / _base : max_int) && dp > 0){
             number *= _base;
             dp--;
+        }
+        
+        if(_is_negative){
+            number = -number;
         }
 
         setdp:
@@ -164,21 +186,33 @@ private:
 
     void Split (int number){
     
-        int d;
         _out_digits_N = 0;
         int i = 0;
 
         if(!number){
-            _out_digits.front() = 0;
+            _out_digits.fill(0);
             return;
         }
 
+        if(number < 0){
+            number = -number;
+            _is_negative = true;
+        } else {
+            _is_negative = false;
+        }
+
         while(number){
-            d = number % _base;
+            _out_digits[i++] = number % _base;
             number /= _base;
-            _out_digits[i++] = d;
             _out_digits_N++;
             if(i == Ndigits) break;
+        }
+
+        if(_is_negative && (i < Ndigits)){
+            _out_digits[i] = 16; // minus sign
+            _out_digits_N++;
+        } else if (i < Ndigits) {
+            _out_digits[i] = 0;
         }
     }
 
@@ -235,6 +269,9 @@ private:
                 _ON_SEG((*segment_pins)[0]); _ON_SEG((*segment_pins)[1]); _ON_SEG((*segment_pins)[2]);
                 _ON_SEG((*segment_pins)[3]); _ON_SEG((*segment_pins)[6]); _ON_SEG((*segment_pins)[5]);
                 break;
+            case 16:    // minus sign
+                _ON_SEG((*segment_pins)[6]);
+                break;
         }
     }
 
@@ -243,6 +280,9 @@ private:
     bool _align_right;
     bool _leading_zeroes;
     bool _isOn = true;
+
+    bool _less_than_one = false;
+    bool _is_negative;
     
     int _out_digits_N;
     std::array<int, Ndigits> _out_digits;
