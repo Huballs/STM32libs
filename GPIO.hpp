@@ -94,6 +94,8 @@ inline void _reset_pin(GPIO_TypeDef* port_, uint32_t reset_mask){
 		AF14	=	0x15,
 		AF15	=	0x16,
 	}
+	// to be continued...
+
 #endif // STM32F3
 
 class GPIOPIN {
@@ -232,17 +234,29 @@ public:
 
 	void checkState();
 
-	inline void resetData(){
-		encdata = 0;
+	inline bool wasTurnedRight(){
+		if(_was_turned_right){
+			_was_turned_right = false;
+			return true;
+		}
+		return false;
 	}
 
-	inline bool getActiveState(){
+	inline bool wasTurnedLeft(){
+		if(_was_turned_left){
+			_was_turned_left = false;
+			return true;
+		}
+		return false;
+	}
+
+	inline bool _getActiveState(){
 		return active_state_;
 	}
-	inline uint8_t getPrevState(){
+	inline uint8_t _getPrevState(){
 		return prev_state;
 	}
-	inline void setPrevState(uint8_t state){
+	inline void _setPrevState(uint8_t state){
 		prev_state = state;
 	}
 
@@ -250,6 +264,9 @@ public:
 	GPIOPIN pinb_;
 	uint8_t encdata = 0;
 	int dir = 0;
+
+	bool _was_turned_right = false;
+	bool _was_turned_left = false;
 private:
 	bool active_state_;
 	uint8_t prev_state;
@@ -267,10 +284,14 @@ inline void GPIO_enable_clock(GPIO_TypeDef *gpio){
 	} else if(gpio == GPIOE){
 		RCC->APB2ENR |= RCC_APB2ENR_IOPEEN;
 	} 
-	/*
+	#if defined(GPIOF)
 	else if(gpio == GPIOF){
 		RCC->APB2ENR |= RCC_APB2ENR_IOPFEN;
-	} else if(gpio == GPIOG){
+	} 
+	#endif
+	#if defined(GPIOG)
+	else if(gpio == GPIOG){
 		RCC->APB2ENR |= RCC_APB2ENR_IOPGEN;
-	}*/
+	}
+	#endif
 }

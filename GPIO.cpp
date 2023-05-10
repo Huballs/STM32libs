@@ -71,7 +71,7 @@ static void Button_check(BUTTON *button){
 static void check_encoder_state(ENCODER *encoder){
 	uint8_t state = encoder->pina_.read();
 	state = state | (encoder->pinb_.read() << 1);
-	if (encoder->getActiveState() == 1) {
+	if (encoder->_getActiveState() == 1) {
 		state = ~state;
 		state &= 0x3;
 	}/*
@@ -103,12 +103,12 @@ static void check_encoder_state(ENCODER *encoder){
 			}
 		}
 */
-	if (encoder->getPrevState() == 0x3){
-		if(state == 2) {encoder->encdata++; encoder->dir = 1;}
-		if(state == 1) {encoder->encdata--; encoder->dir = -1;}
+	if (encoder->_getPrevState() == 0x3){
+		if(state == 2) {encoder->encdata++; encoder->dir =  1; encoder->_was_turned_right = true;}
+		if(state == 1) {encoder->encdata--; encoder->dir = -1; encoder->_was_turned_left = true;}
 	}
 
-	encoder->setPrevState(state);
+	encoder->_setPrevState(state);
 }
 
 
